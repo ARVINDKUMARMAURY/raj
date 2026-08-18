@@ -162,7 +162,6 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
          InlineKeyboardButton("💳 Plans", callback_data="adm_plans")],
         [InlineKeyboardButton("🧾 Active Subs", callback_data="adm_subs_active"),
          InlineKeyboardButton("⏳ Pending Subs", callback_data="adm_subs_pending")],
-        [InlineKeyboardButton("🔙 Main Menu", callback_data="menu_back")],
     ]
     await update.effective_message.reply_text("🛠 *Admin Panel*", reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
 
@@ -190,100 +189,74 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.edit_message_text(text, parse_mode="Markdown")
 
 
-# ---------------- USER: MAIN MENU (SIRF BUY BUTTON) ----------------
+# ---------------- USER: /buy (3rd Party Payment) ----------------
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Start command with only Buy button"""
-    kb = [
-        [InlineKeyboardButton("🛒 Buy Subscription", callback_data="menu_buy")],
-    ]
+    kb = [[InlineKeyboardButton("💳 Buy Subscription", callback_data="do_buy")]]
     await update.effective_message.reply_text(
-        "👋 *Welcome to Subscription Bot!*\n\n"
-        "Main Telegram groups ke liye subscription provide karta hoon.\n\n"
-        "Group me join karne ke liye pehle subscription lena zaroori hai.\n\n"
-        "✅ *Ready to get started?*\n\n"
-        "💡 *Commands:* /help, /buy",
+        "Namaste! 👋\n\n"
+        "Subscription lene ke liye niche 💳 *Buy Subscription* button dabayein "
+        "(ya /buy bhi likh sakte hain).\n"
+        "Kisi bhi group me join karne ke liye pehle subscription lena zaroori hai.\n\n"
+        "📌 *Available Commands:*\n"
+        "/start - Bot start karein\n"
+        "/buy - Subscription lein\n"
+        "/help - Madad lein",
         reply_markup=InlineKeyboardMarkup(kb),
         parse_mode="Markdown"
     )
 
-
-async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle menu button clicks"""
-    q = update.callback_query
-    await q.answer()
-    
-    if q.data == "menu_buy":
-        await cmd_buy(update, context)
-
-
-async def menu_back_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Back to main menu (sirf Buy button)"""
-    q = update.callback_query
-    await q.answer()
-    
-    kb = [
-        [InlineKeyboardButton("🛒 Buy Subscription", callback_data="menu_buy")],
-    ]
-    await q.edit_message_text(
-        "👋 *Welcome to Subscription Bot!*\n\n"
-        "Main Telegram groups ke liye subscription provide karta hoon.\n\n"
-        "Group me join karne ke liye pehle subscription lena zaroori hai.\n\n"
-        "✅ *Ready to get started?*\n\n"
-        "💡 *Commands:* /help, /buy",
-        reply_markup=InlineKeyboardMarkup(kb),
-        parse_mode="Markdown"
-    )
-
-
-# ---------------- USER: HELP COMMAND ----------------
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Help command"""
     await update.effective_message.reply_text(
         "📖 *Help Menu*\n\n"
-        "*How to use this bot:*\n\n"
-        "1️⃣ Type /buy ya 'Buy Subscription' button click karein\n"
-        "2️⃣ Select your group\n"
-        "3️⃣ Choose a plan\n"
-        "4️⃣ Scan QR and pay\n"
-        "5️⃣ Click *'Paid — Check'* button\n"
-        "6️⃣ Join link milega\n"
-        "7️⃣ Click link and 'Request to Join'\n"
-        "8️⃣ Turant approve ho jayega!\n\n"
-        "*Commands:*\n"
-        "/start - Main menu\n"
-        "/buy - Buy subscription\n"
-        "/help - Help menu\n\n"
+        "*User Commands:*\n"
+        "/start - Bot start karein\n"
+        "/buy - Subscription lein (QR payment)\n\n"
         "*Owner Commands:*\n"
-        "/addgroup - Register group\n"
-        "/addplan - Add plan\n"
-        "/grant - Manual access\n"
-        "/extend - Extend subscription\n"
-        "/revoke - Ban user\n"
+        "/addgroup - Group register karein (group me bhejein)\n"
+        "/listgroups - Registered groups dikhayein\n"
+        "/addplan - Plan add karein\n"
+        "/listplans - Plans dikhayein\n"
+        "/grant - Manual access dein\n"
+        "/extend - Subscription extend karein\n"
+        "/revoke - User ban karein\n"
+        "/listsubs - Subscriptions dikhayein\n"
         "/admin - Admin panel\n\n"
-        "💳 *Payment:* UPI QR se payment hoti hai.",
+        "💳 *Payment:* 3rd Party UPI QR se payment hoti hai.",
         parse_mode="Markdown"
     )
 
 
-# ---------------- USER: BUY COMMAND ----------------
+async def _send_group_list(message_func, groups):
+    """Group list bhejo — reply_text ya edit_message_text dono se use ho sakta hai"""
+    kb = [[InlineKeyboardButton(f"📌 {g['title']}", callback_data=f"buygrp_{g['group_id']}")] for g in groups]
+    await message_func(
+        "💳 *Group chuniye:*\n\n"
+        "Jis group me join karna hai, usko select karein.",
+        reply_markup=InlineKeyboardMarkup(kb),
+        parse_mode="Markdown"
+    )
+
 
 async def cmd_buy(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Buy subscription"""
+    """3rd Party Payment — Group select (/buy command se)"""
     groups = db.list_groups_with_plans()
     if not groups:
         await update.effective_message.reply_text("❌ Abhi koi group available nahi hai.")
         return
-    
-    kb = [[InlineKeyboardButton(f"📌 {g['title']}", callback_data=f"buygrp_{g['group_id']}")] for g in groups]
-    kb.append([InlineKeyboardButton("🔙 Back to Main Menu", callback_data="menu_back")])
-    
-    await update.effective_message.reply_text(
-        "💳 *Select Group:*\n\nJis group me join karna hai, usko choose karein.",
-        reply_markup=InlineKeyboardMarkup(kb),
-        parse_mode="Markdown"
-    )
+    await _send_group_list(update.effective_message.reply_text, groups)
+
+
+async def buy_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """3rd Party Payment — Group select (💳 Buy button se)"""
+    q = update.callback_query
+    await q.answer()
+    groups = db.list_groups_with_plans()
+    if not groups:
+        await q.edit_message_text("❌ Abhi koi group available nahi hai.")
+        return
+    await _send_group_list(q.edit_message_text, groups)
 
 
 async def group_select_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -293,18 +266,16 @@ async def group_select_callback(update: Update, context: ContextTypes.DEFAULT_TY
     group_id = int(q.data.split("_")[1])
     group = db.get_group(group_id)
     plans = db.list_plans(group_id=group_id)
-    
     if not plans:
         await q.edit_message_text("❌ Is group ke liye abhi koi plan nahi hai.")
         return
-    
     kb = [[InlineKeyboardButton(f"📆 {p['label']} — ₹{p['amount']} / {p['days']} din", 
                                 callback_data=f"buy_{p['id']}")]
           for p in plans]
-    kb.append([InlineKeyboardButton("🔙 Back to Groups", callback_data="buy_back")])
-    
+    kb.append([InlineKeyboardButton("⬅️ Wapas", callback_data="buy_back")])
     await q.edit_message_text(
-        f"📌 *{group['title']}*\n\nApna plan chuniye:",
+        f"📌 *{group['title']}*\n\n"
+        f"Apna plan chuniye:",
         reply_markup=InlineKeyboardMarkup(kb),
         parse_mode="Markdown"
     )
@@ -314,17 +285,10 @@ async def buy_back_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Wapas groups list"""
     q = update.callback_query
     await q.answer()
-    
     groups = db.list_groups_with_plans()
-    if not groups:
-        await q.edit_message_text("❌ Abhi koi group available nahi hai.")
-        return
-    
     kb = [[InlineKeyboardButton(f"📌 {g['title']}", callback_data=f"buygrp_{g['group_id']}")] for g in groups]
-    kb.append([InlineKeyboardButton("🔙 Back to Main Menu", callback_data="menu_back")])
-    
     await q.edit_message_text(
-        "💳 *Select Group:*",
+        "💳 *Group chuniye:*",
         reply_markup=InlineKeyboardMarkup(kb),
         parse_mode="Markdown"
     )
@@ -351,10 +315,9 @@ async def buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     order_id = result["order_id"]
     db.create_payment(order_id, q.from_user.id, plan["group_id"], plan_id, plan["amount"], plan["days"])
     
-    kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("✅ Paid — Check Payment", callback_data=f"check_{order_id}")],
-        [InlineKeyboardButton("🔙 Back to Main Menu", callback_data="menu_back")]
-    ])
+    kb = InlineKeyboardMarkup([[
+        InlineKeyboardButton("✅ Paid — Check Payment", callback_data=f"check_{order_id}")
+    ]])
     
     await context.bot.send_photo(
         q.from_user.id,
@@ -513,10 +476,6 @@ def build_application():
     application.add_handler(CommandHandler("help", cmd_help))
     application.add_handler(CommandHandler("buy", cmd_buy))
 
-    # Menu callbacks
-    application.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
-    application.add_handler(CallbackQueryHandler(menu_back_callback, pattern="^menu_back$"))
-    
     # Owner commands
     application.add_handler(CommandHandler("addgroup", cmd_addgroup))
     application.add_handler(CommandHandler("listgroups", cmd_listgroups))
@@ -528,10 +487,9 @@ def build_application():
     application.add_handler(CommandHandler("listsubs", cmd_listsubs))
     application.add_handler(CommandHandler("admin", cmd_admin))
 
-    # Admin callbacks
+    # Callbacks
     application.add_handler(CallbackQueryHandler(admin_callback, pattern="^adm_"))
-    
-    # Buy callbacks
+    application.add_handler(CallbackQueryHandler(buy_button_callback, pattern="^do_buy$"))
     application.add_handler(CallbackQueryHandler(group_select_callback, pattern="^buygrp_"))
     application.add_handler(CallbackQueryHandler(buy_back_callback, pattern="^buy_back$"))
     application.add_handler(CallbackQueryHandler(buy_callback, pattern="^buy_\\d+$"))
@@ -540,4 +498,4 @@ def build_application():
     # Join request
     application.add_handler(ChatJoinRequestHandler(handle_join_request))
 
-    return application  # ← YEH LINE HONA CHAHIYE
+    return application
