@@ -515,4 +515,4 @@ def build_application():
 
     # Menu callbacks
     application.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
-    application.add_handler(CallbackQueryHandler(menu_back_callbac
+    application.add_handler(CallbackQueryHandler(menu_back_callback, pattern="^menu_back$"))
