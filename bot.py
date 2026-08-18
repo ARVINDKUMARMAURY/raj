@@ -516,3 +516,28 @@ def build_application():
     # Menu callbacks
     application.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
     application.add_handler(CallbackQueryHandler(menu_back_callback, pattern="^menu_back$"))
+    
+    # Owner commands
+    application.add_handler(CommandHandler("addgroup", cmd_addgroup))
+    application.add_handler(CommandHandler("listgroups", cmd_listgroups))
+    application.add_handler(CommandHandler("addplan", cmd_addplan))
+    application.add_handler(CommandHandler("listplans", cmd_listplans))
+    application.add_handler(CommandHandler("grant", cmd_grant))
+    application.add_handler(CommandHandler("extend", cmd_extend))
+    application.add_handler(CommandHandler("revoke", cmd_revoke))
+    application.add_handler(CommandHandler("listsubs", cmd_listsubs))
+    application.add_handler(CommandHandler("admin", cmd_admin))
+
+    # Admin callbacks
+    application.add_handler(CallbackQueryHandler(admin_callback, pattern="^adm_"))
+    
+    # Buy callbacks
+    application.add_handler(CallbackQueryHandler(group_select_callback, pattern="^buygrp_"))
+    application.add_handler(CallbackQueryHandler(buy_back_callback, pattern="^buy_back$"))
+    application.add_handler(CallbackQueryHandler(buy_callback, pattern="^buy_\\d+$"))
+    application.add_handler(CallbackQueryHandler(check_callback, pattern="^check_"))
+
+    # Join request
+    application.add_handler(ChatJoinRequestHandler(handle_join_request))
+
+    return application  # ← YEH LINE HONA CHAHIYE
